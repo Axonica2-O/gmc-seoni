@@ -1,12 +1,1 @@
-{
-  "name": "axonica-2-gmc-seoni",
-  "version": "2.0.0",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "firebase-admin": "^12.0.0"
-  }
-}
+
