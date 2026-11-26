@@ -33,7 +33,7 @@
   <!-- Live Notice Banner -->
   <div class="bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-indigo-600 text-white px-4 py-2.5 text-center font-medium text-sm sticky top-0 z-30 shadow-lg">
     <span class="bg-white text-fuchsia-700 text-xs font-black px-2 py-0.5 rounded-full mr-2 animate-pulse">LIVE</span>
-    <span id="noticeText">Loading Axonica 2.0 updates...</span>
+    <span id="noticeText">Connecting to Axonica 2.0 live server...</span>
   </div>
 
   <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-10 relative z-10">
@@ -65,7 +65,7 @@
         <h2 class="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">
           Live Batch Leaderboard
         </h2>
-        <span class="text-xs text-slate-400">Auto-updates live</span>
+        <span class="text-xs text-emerald-400 font-semibold">● Live Sync</span>
       </div>
       <div id="leaderboard" class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"></div>
     </section>
@@ -110,7 +110,7 @@
         <input id="studentPhone" type="tel" placeholder="WhatsApp Number" required
           class="md:col-span-2 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-cyan-400">
 
-        <!-- Team Extra Fields (Hidden for Solo) -->
+        <!-- Team Extra Fields -->
         <div id="teamFields" class="hidden md:col-span-2 grid grid-cols-1 gap-4 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30">
           <input id="teamName" type="text" placeholder="Team Name (e.g. 2024 Strikers)"
             class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-400">
@@ -118,7 +118,7 @@
             class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-400"></textarea>
         </div>
 
-        <button type="submit"
+        <button type="submit" id="submitBtn"
           class="md:col-span-2 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:opacity-90 text-white font-extrabold py-4 rounded-xl shadow-lg transition">
           Confirm Registration
         </button>
@@ -131,25 +131,82 @@
     </footer>
   </div>
 
-  <script>
-    let festData = { committees: [], leaderboard: [], events: [] };
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, set, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC09s9QcVdk1NDBly9t-DXN4NZN3F7ua_8",
+      authDomain: "axonica-2.firebaseapp.com",
+      databaseURL: "https://axonica-2-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "axonica-2",
+      storageBucket: "axonica-2.firebasestorage.app",
+      messagingSenderId: "208429370456",
+      appId: "1:208429370456:web:a2bccb1700427f5d3f4e2d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dataRef = ref(db, 'axonica2Data');
+    const regRef = ref(db, 'axonica2Registrations');
+
+    const defaultData = {
+      notice: 'Welcome to Axonica 2.0 — GMC Seoni! Live schedule aur registrations start ho chuke hain.',
+      committees: ['Sports', 'Cultural', 'Literary'],
+      leaderboard: [
+        { id: 1, name: '2024 Batch', points: 0 },
+        { id: 2, name: '2025 Batch', points: 0 },
+        { id: 3, name: '2026 Batch', points: 0 },
+        { id: 4, name: 'Interns', points: 0 }
+      ],
+      events: [
+        {
+          id: 101, name: 'Cricket Tournament', committee: 'Sports', day: 'Day 1',
+          time: '09:00 AM', venue: 'Main Ground', entryType: 'Batch-wise', regType: 'Team',
+          status: 'Upcoming', coordinatorName: '', coordinatorPhone: '',
+          rules: '11 players + 3 substitutes per batch team. Umpire decision will be final.'
+        },
+        {
+          id: 102, name: 'Volleyball', committee: 'Sports', day: 'Day 2',
+          time: '04:00 PM', venue: 'Volleyball Court', entryType: 'Batch-wise', regType: 'Team',
+          status: 'Upcoming', coordinatorName: '', coordinatorPhone: '',
+          rules: '6 players per team. Best of 3 sets.'
+        },
+        {
+          id: 103, name: 'Solo Singing', committee: 'Cultural', day: 'Day 3',
+          time: '05:00 PM', venue: 'Auditorium', entryType: 'Open', regType: 'Solo',
+          status: 'Upcoming', coordinatorName: '', coordinatorPhone: '',
+          rules: 'Time limit 4 minutes. Karaoke track pehle submit karein.'
+        }
+      ]
+    };
+
+    let festData = defaultData;
     let selectedCommittee = 'All';
     let selectedDay = 'All';
     const days = ['All', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8'];
 
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-    async function loadData() {
-      try {
-        const res = await fetch('/api/data');
-        festData = await res.json();
-        document.getElementById('noticeText').textContent = festData.notice;
-        renderLeaderboard();
-        renderFilters();
-        renderEvents();
-        populateEventDropdown();
-      } catch (e) { console.error(e); }
-    }
+    // Real-time listener
+    onValue(dataRef, (snapshot) => {
+      const val = snapshot.val();
+      if (!val) {
+        set(dataRef, defaultData);
+        return;
+      }
+      festData = {
+        notice: val.notice ?? '',
+        committees: val.committees || defaultData.committees,
+        leaderboard: val.leaderboard || defaultData.leaderboard,
+        events: val.events || []
+      };
+      document.getElementById('noticeText').textContent = festData.notice;
+      renderLeaderboard();
+      renderFilters();
+      renderEvents();
+      populateEventDropdown();
+    });
 
     function renderLeaderboard() {
       const sorted = [...festData.leaderboard].sort((a, b) => b.points - a.points);
@@ -162,17 +219,20 @@
       `).join('');
     }
 
+    window.setCommFilter = (c) => { selectedCommittee = c; renderFilters(); renderEvents(); };
+    window.setDayFilter = (d) => { selectedDay = d; renderFilters(); renderEvents(); };
+
     function renderFilters() {
       const comms = ['All', ...festData.committees];
       document.getElementById('committeeFilters').innerHTML = comms.map(c => `
-        <button onclick="selectedCommittee='${esc(c)}'; renderFilters(); renderEvents();"
+        <button onclick="setCommFilter('${esc(c)}')"
           class="px-3.5 py-1.5 rounded-full text-xs font-bold transition ${selectedCommittee === c ? 'bg-fuchsia-600 text-white' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:border-slate-600'}">
           ${esc(c)}
         </button>
       `).join('');
 
       document.getElementById('dayFilters').innerHTML = days.map(d => `
-        <button onclick="selectedDay='${d}'; renderFilters(); renderEvents();"
+        <button onclick="setDayFilter('${d}')"
           class="shrink-0 px-4 py-1.5 rounded-xl text-xs font-bold transition ${selectedDay === d ? 'bg-cyan-500 text-slate-950' : 'bg-slate-900 text-slate-400 border border-slate-800'}">
           ${d}
         </button>
@@ -232,56 +292,55 @@
       sel.innerHTML = '<option value="">-- Event Select Karein --</option>' +
         festData.events.map(e => `<option value="${esc(e.name)}" data-regtype="${esc(e.regType)}">${esc(e.name)} (${esc(e.entryType)} • ${esc(e.regType)})</option>`).join('');
       sel.value = prev;
-      handleEventSelect();
+      window.handleEventSelect();
     }
 
-    function handleEventSelect() {
+    window.handleEventSelect = () => {
       const sel = document.getElementById('eventSelect');
       const opt = sel.options[sel.selectedIndex];
       const isTeam = opt && opt.dataset.regtype === 'Team';
       document.getElementById('teamFields').classList.toggle('hidden', !isTeam);
       document.getElementById('teamName').required = isTeam;
-    }
+    };
 
-    function quickRegister(eventName) {
+    window.quickRegister = (eventName) => {
       document.getElementById('eventSelect').value = eventName;
-      handleEventSelect();
+      window.handleEventSelect();
       document.getElementById('registerSection').scrollIntoView({ behavior: 'smooth' });
-    }
+    };
 
     document.getElementById('regForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const sel = document.getElementById('eventSelect');
       const regType = sel.options[sel.selectedIndex]?.dataset.regtype || 'Solo';
       const msg = document.getElementById('regMsg');
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
 
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: document.getElementById('studentName').value,
+      try {
+        await push(regRef, {
+          name: document.getElementById('studentName').value.trim(),
           batch: document.getElementById('studentBatch').value,
-          phone: document.getElementById('studentPhone').value,
+          phone: document.getElementById('studentPhone').value.trim(),
           eventName: sel.value,
           regType,
-          teamName: document.getElementById('teamName').value,
-          members: document.getElementById('teamMembers').value
-        })
-      });
-      const result = await res.json();
-      if (res.ok) {
-        msg.textContent = result.message;
+          teamName: document.getElementById('teamName').value.trim(),
+          members: document.getElementById('teamMembers').value.trim(),
+          time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+        });
+        msg.textContent = 'Registration confirm ho gaya!';
         msg.className = 'mt-4 text-center text-sm font-bold text-emerald-400';
         e.target.reset();
-        handleEventSelect();
-      } else {
-        msg.textContent = result.error;
+        window.handleEventSelect();
+      } catch (err) {
+        msg.textContent = 'Error: Registration save nahi ho paya. Dobara try karein.';
         msg.className = 'mt-4 text-center text-sm font-bold text-red-400';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirm Registration';
       }
     });
-
-    loadData();
-    setInterval(loadData, 15000);
   </script>
 </body>
 </html>
