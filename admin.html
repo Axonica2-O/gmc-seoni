@@ -13,7 +13,7 @@
     <div class="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-sm text-center space-y-4 shadow-2xl">
       <div class="text-xs font-bold text-fuchsia-400 uppercase tracking-widest">GMC Seoni</div>
       <h1 class="text-2xl font-black text-white">AXONICA 2.0 ADMIN</h1>
-      <input id="pinInput" type="password" inputmode="numeric" placeholder="Admin PIN (1234)"
+      <input id="pinInput" type="password" inputmode="numeric" placeholder="Admin PIN (2983)"
         class="w-full text-center text-2xl tracking-widest bg-slate-800 border border-slate-700 rounded-xl py-3 focus:outline-none focus:border-fuchsia-500">
       <button onclick="login()" class="w-full bg-fuchsia-600 hover:bg-fuchsia-500 py-3.5 rounded-xl font-bold text-lg">
         Unlock Tablet Panel
@@ -27,11 +27,10 @@
     <header class="flex flex-wrap justify-between items-center gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-800">
       <div>
         <h1 class="text-2xl font-black text-fuchsia-400">AXONICA 2.0 CONTROL</h1>
-        <p class="text-xs text-slate-400">GMC Seoni • Live Tablet Dashboard</p>
+        <p class="text-xs text-emerald-400">● Firebase Live Connected</p>
       </div>
       <div class="flex gap-3">
-        <button onclick="loadAdminData()" class="bg-slate-800 hover:bg-slate-700 px-4 py-2.5 rounded-xl font-bold text-sm">Refresh</button>
-        <a href="/" target="_blank" class="bg-cyan-600 hover:bg-cyan-500 px-4 py-2.5 rounded-xl font-bold text-sm">Student Site</a>
+        <a href="./index.html" target="_blank" class="bg-cyan-600 hover:bg-cyan-500 px-4 py-2.5 rounded-xl font-bold text-sm">Student Site</a>
       </div>
     </header>
 
@@ -120,36 +119,71 @@
     </section>
   </div>
 
-  <script>
-    let ADMIN_PIN = '';
-    let adminData = { committees: [], leaderboard: [], events: [], registrations: [] };
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const ADMIN_PIN = "1234"; // Yahan apna secret PIN badal sakte ho
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC09s9QcVdk1NDBly9t-DXN4NZN3F7ua_8",
+      authDomain: "axonica-2.firebaseapp.com",
+      databaseURL: "https://axonica-2-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "axonica-2",
+      storageBucket: "axonica-2.firebasestorage.app",
+      messagingSenderId: "208429370456",
+      appId: "1:208429370456:web:a2bccb1700427f5d3f4e2d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dataRef = ref(db, 'axonica2Data');
+    const regRef = ref(db, 'axonica2Registrations');
+
+    let adminData = { notice: '', committees: ['Sports', 'Cultural', 'Literary'], leaderboard: [], events: [] };
+    let registrations = [];
+
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-    async function api(url, method = 'GET', body = null) {
-      const opts = { method, headers: { 'Content-Type': 'application/json', 'x-admin-pin': ADMIN_PIN } };
-      if (body) opts.body = JSON.stringify(body);
-      return fetch(url, opts);
-    }
-
-    async function login() {
-      ADMIN_PIN = document.getElementById('pinInput').value.trim();
-      const res = await api('/api/admin/verify', 'POST');
-      if (res.ok) {
+    window.login = () => {
+      const pin = document.getElementById('pinInput').value.trim();
+      if (pin === ADMIN_PIN) {
         document.getElementById('loginBox').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
-        loadAdminData();
+        startListeners();
       } else {
         document.getElementById('loginErr').textContent = 'Galat PIN! Dobara try karein.';
       }
+    };
+
+    function startListeners() {
+      onValue(dataRef, (snap) => {
+        const val = snap.val();
+        if (!val) return;
+        adminData = {
+          notice: val.notice ?? '',
+          committees: val.committees || ['Sports', 'Cultural', 'Literary'],
+          leaderboard: val.leaderboard || [],
+          events: val.events || []
+        };
+        renderDashboard();
+      });
+
+      onValue(regRef, (snap) => {
+        const val = snap.val();
+        registrations = val ? Object.values(val).reverse() : [];
+        updateRegFilter();
+        window.renderRegistrations();
+      });
     }
 
-    async function loadAdminData() {
-      const res = await api('/api/admin/all');
-      adminData = await res.json();
+    async function saveData() {
+      await set(dataRef, adminData);
+    }
 
+    function renderDashboard() {
       document.getElementById('noticeInput').value = adminData.notice;
 
-      // Committees
       document.getElementById('committeeTags').innerHTML = adminData.committees.map(c => `
         <span class="bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
           ${esc(c)}
@@ -158,7 +192,6 @@
       `).join('');
       document.getElementById('evComm').innerHTML = adminData.committees.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 
-      // Leaderboard
       document.getElementById('adminLeaderboard').innerHTML = adminData.leaderboard.map(t => `
         <div class="flex items-center justify-between bg-slate-800 p-3.5 rounded-xl">
           <div>
@@ -173,7 +206,6 @@
         </div>
       `).join('');
 
-      // Events
       document.getElementById('adminEvents').innerHTML = adminData.events.map(e => `
         <div class="bg-slate-800 p-4 rounded-xl space-y-3 border border-slate-700">
           <div class="flex justify-between items-start gap-2">
@@ -184,7 +216,7 @@
               <p class="text-xs text-emerald-400 mt-1">Coord: ${e.coordinatorName ? esc(e.coordinatorName) + ' (' + esc(e.coordinatorPhone) + ')' : 'TBA'}</p>
             </div>
             <div class="flex flex-col gap-1.5">
-              <button onclick="editCoordinator(${e.id}, '${esc(e.coordinatorName)}', '${esc(e.coordinatorPhone)}')" class="text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded text-xs font-bold">Edit Coord</button>
+              <button onclick="editCoordinator(${e.id})" class="text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded text-xs font-bold">Edit Coord</button>
               <button onclick="deleteEvent(${e.id})" class="text-red-400 bg-red-500/10 px-2.5 py-1 rounded text-xs font-bold">Delete</button>
             </div>
           </div>
@@ -198,19 +230,19 @@
           </div>
         </div>
       `).join('');
-
-      // Reg filter dropdown
-      const rf = document.getElementById('regFilter');
-      const prevF = rf.value;
-      const uniqueEvents = [...new Set(adminData.registrations.map(r => r.eventName))];
-      rf.innerHTML = '<option value="All">All Events</option>' + uniqueEvents.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
-      rf.value = prevF || 'All';
-      renderRegistrations();
     }
 
-    function renderRegistrations() {
+    function updateRegFilter() {
+      const rf = document.getElementById('regFilter');
+      const prev = rf.value;
+      const uniqueEvents = [...new Set(registrations.map(r => r.eventName))];
+      rf.innerHTML = '<option value="All">All Events</option>' + uniqueEvents.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+      rf.value = prev || 'All';
+    }
+
+    window.renderRegistrations = () => {
       const filter = document.getElementById('regFilter').value;
-      const list = filter === 'All' ? adminData.registrations : adminData.registrations.filter(r => r.eventName === filter);
+      const list = filter === 'All' ? registrations : registrations.filter(r => r.eventName === filter);
       document.getElementById('regCount').textContent = list.length;
       document.getElementById('regTable').innerHTML = list.map(r => `
         <tr class="hover:bg-slate-800/50">
@@ -222,11 +254,11 @@
           <td class="py-2.5 px-3 text-slate-400 text-xs">${esc(r.time)}</td>
         </tr>
       `).join('') || '<tr><td colspan="6" class="py-4 text-center text-slate-500">Koi registration nahi mila.</td></tr>';
-    }
+    };
 
-    function downloadCSV() {
+    window.downloadCSV = () => {
       const filter = document.getElementById('regFilter').value;
-      const list = filter === 'All' ? adminData.registrations : adminData.registrations.filter(r => r.eventName === filter);
+      const list = filter === 'All' ? registrations : registrations.filter(r => r.eventName === filter);
       if (!list.length) return alert('Download karne ke liye koi data nahi hai.');
       const csvEsc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
       const headers = ['Name', 'Batch', 'Event', 'Type', 'Team Name', 'Members', 'Phone', 'Time'];
@@ -236,38 +268,43 @@
       a.href = URL.createObjectURL(blob);
       a.download = `axonica2-${filter.toLowerCase().replace(/\s+/g, '-')}.csv`;
       a.click();
-    }
+    };
 
-    async function updateNotice() {
-      await api('/api/admin/notice', 'POST', { notice: document.getElementById('noticeInput').value });
-      alert('Notice update ho gaya!');
-    }
+    window.updateNotice = async () => {
+      adminData.notice = document.getElementById('noticeInput').value;
+      await saveData();
+      alert('Notice live update ho gaya!');
+    };
 
-    async function addCommittee() {
+    window.addCommittee = async () => {
       const name = document.getElementById('newCommittee').value.trim();
-      if (!name) return;
-      await api('/api/admin/committee', 'POST', { name });
+      if (!name || adminData.committees.includes(name)) return;
+      adminData.committees.push(name);
       document.getElementById('newCommittee').value = '';
-      loadAdminData();
-    }
+      await saveData();
+    };
 
-    async function deleteCommittee(name) {
+    window.deleteCommittee = async (name) => {
       if (!confirm(`Committee "${name}" delete karein?`)) return;
-      await api(`/api/admin/committee/${encodeURIComponent(name)}`, 'DELETE');
-      loadAdminData();
-    }
+      adminData.committees = adminData.committees.filter(c => c !== name);
+      await saveData();
+    };
 
-    async function changePoints(id, delta) {
-      await api('/api/admin/points', 'POST', { id, delta });
-      loadAdminData();
-    }
+    window.changePoints = async (id, delta) => {
+      const team = adminData.leaderboard.find(t => t.id === id);
+      if (team) {
+        team.points = Math.max(0, team.points + delta);
+        await saveData();
+      }
+    };
 
-    async function addEvent() {
+    window.addEvent = async () => {
       const name = document.getElementById('evName').value.trim();
       const time = document.getElementById('evTime').value.trim();
       const venue = document.getElementById('evVenue').value.trim();
       if (!name || !time || !venue) return alert('Event Name, Time aur Venue zaroori hai.');
-      await api('/api/admin/event', 'POST', {
+      adminData.events.push({
+        id: Date.now(),
         name,
         committee: document.getElementById('evComm').value,
         day: document.getElementById('evDay').value,
@@ -275,33 +312,40 @@
         venue,
         entryType: document.getElementById('evEntry').value,
         regType: document.getElementById('evReg').value,
-        coordinatorName: document.getElementById('evCoordName').value,
-        coordinatorPhone: document.getElementById('evCoordPhone').value,
-        rules: document.getElementById('evRules').value
+        status: 'Upcoming',
+        coordinatorName: document.getElementById('evCoordName').value.trim(),
+        coordinatorPhone: document.getElementById('evCoordPhone').value.trim(),
+        rules: document.getElementById('evRules').value.trim()
       });
       ['evName', 'evTime', 'evVenue', 'evCoordName', 'evCoordPhone', 'evRules'].forEach(id => document.getElementById(id).value = '');
-      loadAdminData();
-    }
+      await saveData();
+    };
 
-    async function editCoordinator(id, oldName, oldPhone) {
-      const coordinatorName = prompt('Coordinator ka naam:', oldName || '');
+    window.editCoordinator = async (id) => {
+      const ev = adminData.events.find(e => e.id === id);
+      if (!ev) return;
+      const coordinatorName = prompt('Coordinator ka naam:', ev.coordinatorName || '');
       if (coordinatorName === null) return;
-      const coordinatorPhone = prompt('Coordinator ka 10-digit WhatsApp number:', oldPhone || '');
+      const coordinatorPhone = prompt('Coordinator ka 10-digit WhatsApp number:', ev.coordinatorPhone || '');
       if (coordinatorPhone === null) return;
-      await api(`/api/admin/event/${id}`, 'PUT', { coordinatorName, coordinatorPhone });
-      loadAdminData();
-    }
+      ev.coordinatorName = coordinatorName.trim();
+      ev.coordinatorPhone = coordinatorPhone.trim();
+      await saveData();
+    };
 
-    async function setStatus(id, status) {
-      await api(`/api/admin/event/${id}`, 'PUT', { status });
-      loadAdminData();
-    }
+    window.setStatus = async (id, status) => {
+      const ev = adminData.events.find(e => e.id === id);
+      if (ev) {
+        ev.status = status;
+        await saveData();
+      }
+    };
 
-    async function deleteEvent(id) {
+    window.deleteEvent = async (id) => {
       if (!confirm('Event delete karna hai?')) return;
-      await api(`/api/admin/event/${id}`, 'DELETE');
-      loadAdminData();
-    }
+      adminData.events = adminData.events.filter(e => e.id !== id);
+      await saveData();
+    };
   </script>
 </body>
 </html>
