@@ -3,65 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Axonica 2.0 | Tablet Control Panel</title>
+  <title>Axonica 2.0 | Secure Admin Panel</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-950 text-white min-h-screen font-sans">
 
-  <!-- PIN Lock -->
+  <!-- Firebase Email/Password Login -->
   <div id="loginBox" class="fixed inset-0 bg-slate-950 flex items-center justify-center p-4 z-50">
-    <div class="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-sm text-center space-y-4 shadow-2xl">
-      <div class="text-xs font-bold text-fuchsia-400 uppercase tracking-widest">GMC Seoni</div>
-      <h1 class="text-2xl font-black text-white">AXONICA 2.0 ADMIN</h1>
-      <input id="pinInput" type="password" inputmode="numeric" placeholder="Admin PIN (2983)"
-        class="w-full text-center text-2xl tracking-widest bg-slate-800 border border-slate-700 rounded-xl py-3 focus:outline-none focus:border-fuchsia-500">
-      <button onclick="login()" class="w-full bg-fuchsia-600 hover:bg-fuchsia-500 py-3.5 rounded-xl font-bold text-lg">
-        Unlock Tablet Panel
+    <form id="loginForm" class="bg-slate-900 p-8 rounded-3xl border border-slate-800 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="text-center">
+        <div class="text-xs font-bold text-fuchsia-400 uppercase tracking-widest">GMC Seoni</div>
+        <h1 class="text-2xl font-black text-white mt-1">AXONICA 2.0 ADMIN</h1>
+        <p class="text-xs text-slate-400 mt-1">Committee / Main Admin Login</p>
+      </div>
+      <input id="loginEmail" type="email" required placeholder="Admin ID (e.g. main@axonica.com)"
+        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-fuchsia-500">
+      <input id="loginPass" type="password" required placeholder="Password"
+        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-fuchsia-500">
+      <button type="submit" id="loginBtn" class="w-full bg-fuchsia-600 hover:bg-fuchsia-500 py-3.5 rounded-xl font-bold text-base">
+        Secure Login
       </button>
-      <p id="loginErr" class="text-red-400 text-sm"></p>
-    </div>
+      <p id="loginErr" class="text-red-400 text-xs text-center"></p>
+    </form>
   </div>
 
-  <!-- Dashboard -->
+  <!-- Main Dashboard -->
   <div id="dashboard" class="hidden max-w-7xl mx-auto p-4 md:p-6 space-y-6">
     <header class="flex flex-wrap justify-between items-center gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-800">
       <div>
         <h1 class="text-2xl font-black text-fuchsia-400">AXONICA 2.0 CONTROL</h1>
-        <p class="text-xs text-emerald-400">● Firebase Live Connected</p>
+        <p id="roleBadge" class="text-xs text-emerald-400 font-bold mt-0.5"></p>
       </div>
-      <div class="flex gap-3">
-        <a href="./index.html" target="_blank" class="bg-cyan-600 hover:bg-cyan-500 px-4 py-2.5 rounded-xl font-bold text-sm">Student Site</a>
+      <div class="flex gap-2.5">
+        <a href="./index.html" target="_blank" class="bg-cyan-600 hover:bg-cyan-500 px-4 py-2 rounded-xl font-bold text-xs md:text-sm">Student Site</a>
+        <button onclick="logout()" class="bg-red-600/80 hover:bg-red-500 px-4 py-2 rounded-xl font-bold text-xs md:text-sm">Logout</button>
       </div>
     </header>
 
-    <!-- Row 1: Notice & Leaderboard -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <section class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
-        <h2 class="text-lg font-bold text-fuchsia-400">1. Live Notice Bar</h2>
-        <textarea id="noticeInput" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 focus:outline-none focus:border-fuchsia-500"></textarea>
-        <button onclick="updateNotice()" class="w-full bg-fuchsia-600 hover:bg-fuchsia-500 py-3 rounded-xl font-bold">
-          Publish Live Notice
-        </button>
+    <!-- MAIN ADMIN ONLY: Notice, Committees, Admin Access & Batch Points -->
+    <div id="mainAdminSection" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+          <h2 class="text-lg font-bold text-fuchsia-400">1. Live Notice Bar (Main Admin)</h2>
+          <textarea id="noticeInput" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-fuchsia-500"></textarea>
+          <button onclick="updateNotice()" class="w-full bg-fuchsia-600 hover:bg-fuchsia-500 py-2.5 rounded-xl font-bold text-sm">Publish Live Notice</button>
 
-        <div class="pt-4 border-t border-slate-800 space-y-3">
-          <h3 class="text-sm font-bold text-cyan-400">Committees / Disciplines</h3>
-          <div class="flex gap-2">
-            <input id="newCommittee" placeholder="Nayi Committee (e.g. E-Sports)" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm">
-            <button onclick="addCommittee()" class="bg-cyan-600 hover:bg-cyan-500 px-4 py-2 rounded-xl font-bold text-sm">+ Add</button>
+          <div class="pt-4 border-t border-slate-800 space-y-3">
+            <h3 class="text-sm font-bold text-cyan-400">Committees / Disciplines</h3>
+            <div class="flex gap-2">
+              <input id="newCommittee" placeholder="Nayi Committee (e.g. E-Sports)" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm">
+              <button onclick="addCommittee()" class="bg-cyan-600 hover:bg-cyan-500 px-4 py-2 rounded-xl font-bold text-sm">+ Add</button>
+            </div>
+            <div id="committeeTags" class="flex flex-wrap gap-2"></div>
           </div>
-          <div id="committeeTags" class="flex flex-wrap gap-2"></div>
-        </div>
-      </section>
+        </section>
 
+        <section class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+          <h2 class="text-lg font-bold text-amber-400">2. Batch Points Table (Main Admin)</h2>
+          <div id="adminLeaderboard" class="space-y-3"></div>
+        </section>
+      </div>
+
+      <!-- DYNAMIC COMMITTEE ADMIN ACCESS -->
       <section class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
-        <h2 class="text-lg font-bold text-amber-400">2. Batch Points Table</h2>
-        <div id="adminLeaderboard" class="space-y-3"></div>
+        <div>
+          <h2 class="text-lg font-bold text-indigo-400">3. Committee Admin Access (Bina Code Edit Kiye)</h2>
+          <p class="text-xs text-slate-400">Firebase Authentication me user banane ke baad yahan uska email kisi bhi committee ko assign kar dein.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input id="assignEmail" type="email" placeholder="Committee Email (e.g. esports@axonica.com)"
+            class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm">
+          <select id="assignComm" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm"></select>
+          <button onclick="assignAdminRole()" class="bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold py-2.5 text-sm">
+            + Assign Committee Admin
+          </button>
+        </div>
+        <div id="assignedRolesList" class="flex flex-wrap gap-2"></div>
       </section>
     </div>
 
-    <!-- Row 2: Event Manager -->
+    <!-- EVENTS MANAGER (Main Admin + Committee Admin) -->
     <section class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
-      <h2 class="text-lg font-bold text-emerald-400">3. Events & Coordinator Manager</h2>
+      <div class="flex flex-wrap justify-between items-center gap-2">
+        <h2 id="eventFormTitle" class="text-lg font-bold text-emerald-400">Events Manager (Add / Edit)</h2>
+        <button id="cancelEditBtn" onclick="cancelEdit()" class="hidden text-xs bg-slate-700 px-3 py-1.5 rounded-lg font-bold">Cancel Edit</button>
+      </div>
 
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-800/60 p-4 rounded-xl">
         <input id="evName" placeholder="Event Name *" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm">
@@ -70,8 +96,17 @@
           <option>Day 1</option><option>Day 2</option><option>Day 3</option><option>Day 4</option>
           <option>Day 5</option><option>Day 6</option><option>Day 7</option><option>Day 8</option>
         </select>
-        <input id="evTime" placeholder="Time (e.g. 10:00 AM) *" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm">
         <input id="evVenue" placeholder="Venue *" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm">
+
+        <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5">
+          <span class="text-xs text-slate-400">Start:</span>
+          <input id="evStart" type="time" class="bg-transparent text-sm flex-1 focus:outline-none">
+        </div>
+        <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5">
+          <span class="text-xs text-slate-400">End:</span>
+          <input id="evEnd" type="time" class="bg-transparent text-sm flex-1 focus:outline-none">
+        </div>
+
         <select id="evEntry" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm">
           <option value="Batch-wise">Batch-wise</option>
           <option value="Open">Open for All</option>
@@ -80,19 +115,20 @@
           <option value="Solo">Solo Registration</option>
           <option value="Team">Team Registration</option>
         </select>
+
         <input id="evCoordName" placeholder="Coordinator Name (Optional)" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm">
         <input id="evCoordPhone" placeholder="Coordinator WhatsApp (Optional)" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm">
-        <input id="evRules" placeholder="Short Rules (Optional)" class="md:col-span-2 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm">
-        <button onclick="addEvent()" class="bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold py-2.5 text-sm">+ Add Event</button>
+        <input id="evRules" placeholder="Short Rules (Optional)" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm">
+        <button id="saveEventBtn" onclick="saveEvent()" class="bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold py-2.5 text-sm">+ Add Event</button>
       </div>
 
       <div id="adminEvents" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </section>
 
-    <!-- Row 3: Registrations + CSV -->
+    <!-- REGISTRATIONS -->
     <section class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
       <div class="flex flex-wrap justify-between items-center gap-3">
-        <h2 class="text-lg font-bold text-sky-400">4. Registrations (<span id="regCount">0</span>)</h2>
+        <h2 class="text-lg font-bold text-sky-400">Registrations (<span id="regCount">0</span>)</h2>
         <div class="flex gap-2">
           <select id="regFilter" onchange="renderRegistrations()" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm">
             <option value="All">All Events</option>
@@ -100,17 +136,12 @@
           <button onclick="downloadCSV()" class="bg-sky-600 hover:bg-sky-500 px-4 py-2 rounded-xl font-bold text-sm">Download CSV</button>
         </div>
       </div>
-
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b border-slate-800 text-slate-400 text-xs uppercase">
-              <th class="py-2 px-3">Name / Captain</th>
-              <th class="py-2 px-3">Batch</th>
-              <th class="py-2 px-3">Event</th>
-              <th class="py-2 px-3">Team / Members</th>
-              <th class="py-2 px-3">Phone</th>
-              <th class="py-2 px-3">Time</th>
+              <th class="py-2 px-3">Name</th><th class="py-2 px-3">Batch</th><th class="py-2 px-3">Event</th>
+              <th class="py-2 px-3">Team</th><th class="py-2 px-3">Phone</th><th class="py-2 px-3">Action</th>
             </tr>
           </thead>
           <tbody id="regTable" class="divide-y divide-slate-800 text-sm"></tbody>
@@ -119,11 +150,34 @@
     </section>
   </div>
 
+  <!-- FLEXIBLE WINNERS MODAL -->
+  <div id="winnerModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-xl font-black text-amber-400">🏆 Manage Winners</h3>
+          <p id="winnerEventTitle" class="text-xs text-slate-400"></p>
+        </div>
+        <button onclick="closeWinnerModal()" class="text-slate-400 hover:text-white text-xl font-bold">×</button>
+      </div>
+      <div id="winnerRows" class="space-y-3"></div>
+      <button onclick="addWinnerRow()" class="w-full bg-slate-800 hover:bg-slate-700 border border-dashed border-slate-600 py-2.5 rounded-xl text-xs font-bold text-cyan-400">
+        + Add Winner / Rank
+      </button>
+      <div class="flex gap-3 pt-2">
+        <button onclick="closeWinnerModal()" class="flex-1 bg-slate-800 py-3 rounded-xl font-bold text-sm">Cancel</button>
+        <button onclick="saveWinners()" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 py-3 rounded-xl font-black text-sm">Save & Publish</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, onValue, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    const ADMIN_PIN = "1234"; // Yahan apna secret PIN badal sakte ho
+    // SIRF MAIN ADMIN EMAIL YAHAN FIXED HAI (Baaki sab tablet se dynamically assign honge)
+    const MAIN_ADMIN_EMAIL = "main@axonica.com";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC09s9QcVdk1NDBly9t-DXN4NZN3F7ua_8",
@@ -137,26 +191,79 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth(app);
     const dataRef = ref(db, 'axonica2Data');
     const regRef = ref(db, 'axonica2Registrations');
 
-    let adminData = { notice: '', committees: ['Sports', 'Cultural', 'Literary'], leaderboard: [], events: [] };
+    const defaultRoles = [
+      { email: "sports@axonica.com", committee: "Sports" },
+      { email: "cultural@axonica.com", committee: "Cultural" },
+      { email: "literary@axonica.com", committee: "Literary" }
+    ];
+
+    let currentRole = null;
+    let adminData = { notice: '', committees: ['Sports', 'Cultural', 'Literary'], leaderboard: [], events: [], adminRoles: defaultRoles };
     let registrations = [];
+    let editingEventId = null;
+    let activeWinnerEventId = null;
 
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-    window.login = () => {
-      const pin = document.getElementById('pinInput').value.trim();
-      if (pin === ADMIN_PIN) {
+    // Auth Listener (Reads dynamic roles from Firebase)
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const email = user.email.toLowerCase();
+        let role = null;
+
+        if (email === MAIN_ADMIN_EMAIL) {
+          role = 'MAIN';
+        } else {
+          const snap = await get(ref(db, 'axonica2Data/adminRoles'));
+          const rolesList = snap.exists() ? snap.val() : defaultRoles;
+          const match = (rolesList || []).find(r => r.email.toLowerCase() === email);
+          if (match) role = match.committee;
+        }
+
+        if (!role) {
+          document.getElementById('loginErr').textContent = 'Is email ko koi committee assign nahi hai. Main Admin se contact karein.';
+          await signOut(auth);
+          return;
+        }
+
+        currentRole = role;
         document.getElementById('loginBox').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
+        document.getElementById('roleBadge').textContent = role === 'MAIN' ? '👑 Logged in as: MAIN ADMIN' : `🛡️ Logged in as: ${role} Committee Admin`;
+        document.getElementById('mainAdminSection').classList.toggle('hidden', role !== 'MAIN');
         startListeners();
       } else {
-        document.getElementById('loginErr').textContent = 'Galat PIN! Dobara try karein.';
+        currentRole = null;
+        document.getElementById('loginBox').classList.remove('hidden');
+        document.getElementById('dashboard').classList.add('hidden');
       }
-    };
+    });
 
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      const err = document.getElementById('loginErr');
+      btn.disabled = true; btn.textContent = 'Checking...'; err.textContent = '';
+      try {
+        await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value.trim(), document.getElementById('loginPass').value);
+      } catch (error) {
+        err.textContent = 'Galat Email ya Password!';
+      } finally {
+        btn.disabled = false; btn.textContent = 'Secure Login';
+      }
+    });
+
+    window.logout = () => signOut(auth);
+
+    let listenersStarted = false;
     function startListeners() {
+      if (listenersStarted) { renderDashboard(); return; }
+      listenersStarted = true;
+
       onValue(dataRef, (snap) => {
         const val = snap.val();
         if (!val) return;
@@ -164,85 +271,278 @@
           notice: val.notice ?? '',
           committees: val.committees || ['Sports', 'Cultural', 'Literary'],
           leaderboard: val.leaderboard || [],
-          events: val.events || []
+          events: val.events || [],
+          adminRoles: val.adminRoles || defaultRoles
         };
         renderDashboard();
       });
 
       onValue(regRef, (snap) => {
         const val = snap.val();
-        registrations = val ? Object.values(val).reverse() : [];
+        registrations = val ? Object.entries(val).map(([key, v]) => ({ _key: key, ...v })).reverse() : [];
         updateRegFilter();
         window.renderRegistrations();
       });
     }
 
-    async function saveData() {
-      await set(dataRef, adminData);
-    }
+    async function saveData() { await set(dataRef, adminData); }
 
     function renderDashboard() {
-      document.getElementById('noticeInput').value = adminData.notice;
+      const isMain = currentRole === 'MAIN';
+      if (isMain) {
+        document.getElementById('noticeInput').value = adminData.notice;
+        document.getElementById('committeeTags').innerHTML = adminData.committees.map(c => `
+          <span class="bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+            ${esc(c)} <button onclick="deleteCommittee('${esc(c)}')" class="text-red-400">×</button>
+          </span>`).join('');
 
-      document.getElementById('committeeTags').innerHTML = adminData.committees.map(c => `
-        <span class="bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
-          ${esc(c)}
-          <button onclick="deleteCommittee('${esc(c)}')" class="text-red-400 hover:text-red-300">×</button>
-        </span>
-      `).join('');
-      document.getElementById('evComm').innerHTML = adminData.committees.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        document.getElementById('assignComm').innerHTML = adminData.committees.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        document.getElementById('assignedRolesList').innerHTML = (adminData.adminRoles || []).map((r, i) => `
+          <span class="bg-indigo-950/60 border border-indigo-500/40 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2">
+            <span class="text-indigo-300 font-bold">${esc(r.committee)}:</span> ${esc(r.email)}
+            <button onclick="removeAdminRole(${i})" class="text-red-400 font-bold ml-1">×</button>
+          </span>`).join('') || '<span class="text-xs text-slate-500">Koi committee admin assign nahi hai.</span>';
 
-      document.getElementById('adminLeaderboard').innerHTML = adminData.leaderboard.map(t => `
-        <div class="flex items-center justify-between bg-slate-800 p-3.5 rounded-xl">
-          <div>
-            <div class="font-bold">${esc(t.name)}</div>
-            <div class="text-xl font-black text-amber-400">${t.points} pts</div>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="changePoints(${t.id}, -5)" class="bg-red-600/80 hover:bg-red-500 px-3.5 py-2 rounded-lg font-bold">-5</button>
-            <button onclick="changePoints(${t.id}, 5)" class="bg-emerald-600/80 hover:bg-emerald-500 px-3.5 py-2 rounded-lg font-bold">+5</button>
-            <button onclick="changePoints(${t.id}, 10)" class="bg-indigo-600 hover:bg-indigo-500 px-3.5 py-2 rounded-lg font-bold">+10</button>
-          </div>
-        </div>
-      `).join('');
+        document.getElementById('adminLeaderboard').innerHTML = adminData.leaderboard.map(t => `
+          <div class="flex items-center justify-between bg-slate-800 p-3 rounded-xl">
+            <div><div class="font-bold">${esc(t.name)}</div><div class="text-xl font-black text-amber-400">${t.points} pts</div></div>
+            <div class="flex gap-2">
+              <button onclick="changePoints(${t.id}, -5)" class="bg-red-600/80 px-3 py-2 rounded-lg font-bold text-sm">-5</button>
+              <button onclick="changePoints(${t.id}, 5)" class="bg-emerald-600/80 px-3 py-2 rounded-lg font-bold text-sm">+5</button>
+              <button onclick="changePoints(${t.id}, 10)" class="bg-indigo-600 px-3 py-2 rounded-lg font-bold text-sm">+10</button>
+            </div>
+          </div>`).join('');
+      }
 
-      document.getElementById('adminEvents').innerHTML = adminData.events.map(e => `
+      const commSel = document.getElementById('evComm');
+      if (isMain) {
+        commSel.innerHTML = adminData.committees.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        commSel.disabled = false;
+      } else {
+        commSel.innerHTML = `<option value="${esc(currentRole)}">${esc(currentRole)}</option>`;
+        commSel.disabled = true;
+      }
+
+      const visibleEvents = isMain ? adminData.events : adminData.events.filter(e => e.committee === currentRole);
+
+      document.getElementById('adminEvents').innerHTML = visibleEvents.map(e => `
         <div class="bg-slate-800 p-4 rounded-xl space-y-3 border border-slate-700">
           <div class="flex justify-between items-start gap-2">
             <div>
-              <span class="text-xs text-fuchsia-400 font-bold uppercase">${esc(e.committee)} • ${esc(e.day)} • ${esc(e.entryType)} (${esc(e.regType)})</span>
+              <span class="text-xs text-fuchsia-400 font-bold uppercase">${esc(e.committee)} • ${esc(e.day)} • ${esc(e.entryType)}</span>
               <h3 class="font-bold text-lg">${esc(e.name)}</h3>
-              <p class="text-xs text-slate-400">${esc(e.time)} • ${esc(e.venue)}</p>
+              <p class="text-xs text-slate-300">🕒 ${esc(e.startTime || e.time)} ${e.endTime ? '– ' + esc(e.endTime) : ''} • 📍 ${esc(e.venue)}</p>
               <p class="text-xs text-emerald-400 mt-1">Coord: ${e.coordinatorName ? esc(e.coordinatorName) + ' (' + esc(e.coordinatorPhone) + ')' : 'TBA'}</p>
+              ${(e.winners && e.winners.length) ? `<p class="text-xs text-amber-300 mt-1">🏆 ${e.winners.length} Winner(s) Published</p>` : ''}
             </div>
             <div class="flex flex-col gap-1.5">
-              <button onclick="editCoordinator(${e.id})" class="text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded text-xs font-bold">Edit Coord</button>
+              <button onclick="startEditEvent(${e.id})" class="text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded text-xs font-bold">Edit</button>
+              <button onclick="openWinnerModal(${e.id})" class="text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded text-xs font-bold">🏆 Winners</button>
               <button onclick="deleteEvent(${e.id})" class="text-red-400 bg-red-500/10 px-2.5 py-1 rounded text-xs font-bold">Delete</button>
             </div>
           </div>
           <div class="grid grid-cols-3 gap-2">
             ${['Upcoming', 'Live', 'Completed'].map(st => `
-              <button onclick="setStatus(${e.id}, '${st}')"
-                class="py-2 rounded-lg text-xs font-bold transition ${e.status === st ? 'bg-fuchsia-600 text-white' : 'bg-slate-700 text-slate-300'}">
-                ${st}
-              </button>
+              <button onclick="setStatus(${e.id}, '${st}')" class="py-2 rounded-lg text-xs font-bold ${e.status === st ? 'bg-fuchsia-600 text-white' : 'bg-slate-700 text-slate-300'}">${st}</button>
             `).join('')}
           </div>
         </div>
-      `).join('');
+      `).join('') || '<div class="md:col-span-2 text-center py-6 text-slate-500 text-sm">Abhi koi event nahi hai.</div>';
+    }
+
+// --- DYNAMIC ADMIN ROLE ASSIGNMENT ---
+    window.assignAdminRole = async () => {
+      const email = document.getElementById('assignEmail').value.trim().toLowerCase();
+      const committee = document.getElementById('assignComm').value;
+      if (!email || !committee) return alert('Email aur Committee dono select karein.');
+      adminData.adminRoles = (adminData.adminRoles || []).filter(r => r.email.toLowerCase() !== email);
+      adminData.adminRoles.push({ email, committee });
+      document.getElementById('assignEmail').value = '';
+      await saveData();
+      alert(`${email} ko ${committee} Committee ka Admin bana diya gaya!`);
+    };
+
+    window.removeAdminRole = async (idx) => {
+      if (!confirm('Is admin ka access hatana hai?')) return;
+      adminData.adminRoles.splice(idx, 1);
+      await saveData();
+    };
+
+    // --- ADD / EDIT EVENT WITH TIMING OVERLAP WARNING ---
+    window.saveEvent = async () => {
+      const name = document.getElementById('evName').value.trim();
+      const committee = document.getElementById('evComm').value;
+      const day = document.getElementById('evDay').value;
+      const startTime = document.getElementById('evStart').value;
+      const endTime = document.getElementById('evEnd').value;
+      const venue = document.getElementById('evVenue').value.trim();
+
+      if (!name || !startTime || !endTime || !venue) return alert('Event Name, Start Time, End Time aur Venue zaroori hai.');
+      if (endTime <= startTime) return alert('End Time, Start Time ke baad ka hona chahiye.');
+
+      const clashes = adminData.events.filter(e =>
+        e.id !== editingEventId && e.day === day && e.startTime && e.endTime &&
+        (startTime < e.endTime && e.startTime < endTime)
+      );
+
+      if (clashes.length > 0) {
+        const clashText = clashes.map(c => `• ${c.name} (${c.committee} Committee) — ${c.startTime} se ${c.endTime} @ ${c.venue}`).join('\n');
+        const proceed = confirm(`⚠️ TIMING OVERLAP WARNING!\n\n${day} ko is time par pehle se yeh event scheduled hai:\n${clashText}\n\nKya aapne doosri committee se coordinate kar liya hai?\nPhir bhi add karne ke liye OK dabayein.`);
+        if (!proceed) return;
+      }
+
+      const payload = {
+        name, committee, day, startTime, endTime, venue,
+        entryType: document.getElementById('evEntry').value,
+        regType: document.getElementById('evReg').value,
+        coordinatorName: document.getElementById('evCoordName').value.trim(),
+        coordinatorPhone: document.getElementById('evCoordPhone').value.trim(),
+        rules: document.getElementById('evRules').value.trim()
+      };
+
+      if (editingEventId) {
+        const idx = adminData.events.findIndex(e => e.id === editingEventId);
+        if (idx !== -1) adminData.events[idx] = { ...adminData.events[idx], ...payload };
+        window.cancelEdit();
+      } else {
+        adminData.events.push({ id: Date.now(), status: 'Upcoming', winners: [], ...payload });
+        clearEventForm();
+      }
+      await saveData();
+    };
+
+    function clearEventForm() {
+      ['evName', 'evStart', 'evEnd', 'evVenue', 'evCoordName', 'evCoordPhone', 'evRules'].forEach(id => document.getElementById(id).value = '');
+    }
+
+    window.startEditEvent = (id) => {
+      const e = adminData.events.find(x => x.id === id);
+      if (!e) return;
+      editingEventId = id;
+      document.getElementById('evName').value = e.name || '';
+      document.getElementById('evComm').value = e.committee || currentRole;
+      document.getElementById('evDay').value = e.day || 'Day 1';
+      document.getElementById('evStart').value = e.startTime || '';
+      document.getElementById('evEnd').value = e.endTime || '';
+      document.getElementById('evVenue').value = e.venue || '';
+      document.getElementById('evEntry').value = e.entryType || 'Open';
+      document.getElementById('evReg').value = e.regType || 'Solo';
+      document.getElementById('evCoordName').value = e.coordinatorName || '';
+      document.getElementById('evCoordPhone').value = e.coordinatorPhone || '';
+      document.getElementById('evRules').value = e.rules || '';
+      document.getElementById('eventFormTitle').textContent = `Editing: ${e.name}`;
+      document.getElementById('saveEventBtn').textContent = 'Save Changes';
+      document.getElementById('cancelEditBtn').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.cancelEdit = () => {
+      editingEventId = null;
+      clearEventForm();
+      document.getElementById('eventFormTitle').textContent = 'Events Manager (Add / Edit)';
+      document.getElementById('saveEventBtn').textContent = '+ Add Event';
+      document.getElementById('cancelEditBtn').classList.add('hidden');
+    };
+
+    // --- FLEXIBLE WINNERS MODAL ---
+    window.openWinnerModal = (id) => {
+      const e = adminData.events.find(x => x.id === id);
+      if (!e) return;
+      activeWinnerEventId = id;
+      document.getElementById('winnerEventTitle').textContent = `${e.name} (${e.committee})`;
+      const container = document.getElementById('winnerRows');
+      container.innerHTML = '';
+      const existing = e.winners || [];
+      if (existing.length === 0) window.addWinnerRow('1st', '', '');
+      else existing.forEach(w => window.addWinnerRow(w.rank, w.name, w.batch));
+      document.getElementById('winnerModal').classList.remove('hidden');
+      document.getElementById('winnerModal').classList.add('flex');
+    };
+
+    window.addWinnerRow = (rank = '', name = '', batch = '') => {
+      const div = document.createElement('div');
+      div.className = 'winner-row grid grid-cols-12 gap-2 items-center bg-slate-800 p-2.5 rounded-xl';
+      div.innerHTML = `
+        <input class="w-rank col-span-3 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs" placeholder="Rank (1st)" value="${esc(rank)}">
+        <input class="w-name col-span-5 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs" placeholder="Winner / Team Name" value="${esc(name)}">
+        <input class="w-batch col-span-3 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs" placeholder="Batch" value="${esc(batch)}">
+        <button onclick="this.parentElement.remove()" class="col-span-1 text-red-400 font-bold text-lg">×</button>
+      `;
+      document.getElementById('winnerRows').appendChild(div);
+    };
+
+    window.closeWinnerModal = () => {
+      document.getElementById('winnerModal').classList.add('hidden');
+      document.getElementById('winnerModal').classList.remove('flex');
+    };
+
+    window.saveWinners = async () => {
+      const ev = adminData.events.find(x => x.id === activeWinnerEventId);
+      if (!ev) return;
+      const winners = [];
+      document.querySelectorAll('#winnerRows .winner-row').forEach(r => {
+        const rank = r.querySelector('.w-rank').value.trim();
+        const name = r.querySelector('.w-name').value.trim();
+        const batch = r.querySelector('.w-batch').value.trim();
+        if (rank && name) winners.push({ rank, name, batch });
+      });
+      ev.winners = winners;
+      await saveData();
+      window.closeWinnerModal();
+      alert('Winners Student Website par live update ho gaye!');
+    };
+
+    // --- OTHER CONTROLS ---
+    window.setStatus = async (id, status) => {
+      const ev = adminData.events.find(e => e.id === id);
+      if (ev) { ev.status = status; await saveData(); }
+    };
+    window.deleteEvent = async (id) => {
+      if (!confirm('Event delete karna hai?')) return;
+      adminData.events = adminData.events.filter(e => e.id !== id);
+      await saveData();
+    };
+    window.updateNotice = async () => {
+      adminData.notice = document.getElementById('noticeInput').value;
+      await saveData();
+      alert('Notice update ho gaya!');
+    };
+    window.addCommittee = async () => {
+      const name = document.getElementById('newCommittee').value.trim();
+      if (!name || adminData.committees.includes(name)) return;
+      adminData.committees.push(name);
+      document.getElementById('newCommittee').value = '';
+      await saveData();
+    };
+    window.deleteCommittee = async (name) => {
+      if (!confirm(`Committee "${name}" delete karein?`)) return;
+      adminData.committees = adminData.committees.filter(c => c !== name);
+      await saveData();
+    };
+    window.changePoints = async (id, delta) => {
+      const team = adminData.leaderboard.find(t => t.id === id);
+      if (team) { team.points = Math.max(0, team.points + delta); await saveData(); }
+    };
+
+    // --- REGISTRATIONS ---
+    function getRoleRegistrations() {
+      if (currentRole === 'MAIN') return registrations;
+      const myEventNames = adminData.events.filter(e => e.committee === currentRole).map(e => e.name);
+      return registrations.filter(r => r.committee === currentRole || myEventNames.includes(r.eventName));
     }
 
     function updateRegFilter() {
       const rf = document.getElementById('regFilter');
       const prev = rf.value;
-      const uniqueEvents = [...new Set(registrations.map(r => r.eventName))];
+      const uniqueEvents = [...new Set(getRoleRegistrations().map(r => r.eventName))];
       rf.innerHTML = '<option value="All">All Events</option>' + uniqueEvents.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
       rf.value = prev || 'All';
     }
 
     window.renderRegistrations = () => {
       const filter = document.getElementById('regFilter').value;
-      const list = filter === 'All' ? registrations : registrations.filter(r => r.eventName === filter);
+      const base = getRoleRegistrations();
+      const list = filter === 'All' ? base : base.filter(r => r.eventName === filter);
       document.getElementById('regCount').textContent = list.length;
       document.getElementById('regTable').innerHTML = list.map(r => `
         <tr class="hover:bg-slate-800/50">
@@ -251,14 +551,19 @@
           <td class="py-2.5 px-3 text-fuchsia-400 font-medium">${esc(r.eventName)}</td>
           <td class="py-2.5 px-3 text-xs text-slate-300">${r.teamName ? '<b>' + esc(r.teamName) + '</b><br>' + esc(r.members) : 'Solo'}</td>
           <td class="py-2.5 px-3"><a href="tel:${esc(r.phone)}" class="text-emerald-400 underline">${esc(r.phone)}</a></td>
-          <td class="py-2.5 px-3 text-slate-400 text-xs">${esc(r.time)}</td>
-        </tr>
-      `).join('') || '<tr><td colspan="6" class="py-4 text-center text-slate-500">Koi registration nahi mila.</td></tr>';
+          <td class="py-2.5 px-3"><button onclick="deleteReg('${esc(r._key)}')" class="text-red-400 text-xs font-bold">Delete</button></td>
+        </tr>`).join('') || '<tr><td colspan="6" class="py-4 text-center text-slate-500">Koi registration nahi mila.</td></tr>';
+    };
+
+    window.deleteReg = async (key) => {
+      if (!confirm('Yeh registration delete karna hai?')) return;
+      await remove(ref(db, `axonica2Registrations/${key}`));
     };
 
     window.downloadCSV = () => {
       const filter = document.getElementById('regFilter').value;
-      const list = filter === 'All' ? registrations : registrations.filter(r => r.eventName === filter);
+      const base = getRoleRegistrations();
+      const list = filter === 'All' ? base : base.filter(r => r.eventName === filter);
       if (!list.length) return alert('Download karne ke liye koi data nahi hai.');
       const csvEsc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
       const headers = ['Name', 'Batch', 'Event', 'Type', 'Team Name', 'Members', 'Phone', 'Time'];
@@ -268,83 +573,6 @@
       a.href = URL.createObjectURL(blob);
       a.download = `axonica2-${filter.toLowerCase().replace(/\s+/g, '-')}.csv`;
       a.click();
-    };
-
-    window.updateNotice = async () => {
-      adminData.notice = document.getElementById('noticeInput').value;
-      await saveData();
-      alert('Notice live update ho gaya!');
-    };
-
-    window.addCommittee = async () => {
-      const name = document.getElementById('newCommittee').value.trim();
-      if (!name || adminData.committees.includes(name)) return;
-      adminData.committees.push(name);
-      document.getElementById('newCommittee').value = '';
-      await saveData();
-    };
-
-    window.deleteCommittee = async (name) => {
-      if (!confirm(`Committee "${name}" delete karein?`)) return;
-      adminData.committees = adminData.committees.filter(c => c !== name);
-      await saveData();
-    };
-
-    window.changePoints = async (id, delta) => {
-      const team = adminData.leaderboard.find(t => t.id === id);
-      if (team) {
-        team.points = Math.max(0, team.points + delta);
-        await saveData();
-      }
-    };
-
-    window.addEvent = async () => {
-      const name = document.getElementById('evName').value.trim();
-      const time = document.getElementById('evTime').value.trim();
-      const venue = document.getElementById('evVenue').value.trim();
-      if (!name || !time || !venue) return alert('Event Name, Time aur Venue zaroori hai.');
-      adminData.events.push({
-        id: Date.now(),
-        name,
-        committee: document.getElementById('evComm').value,
-        day: document.getElementById('evDay').value,
-        time,
-        venue,
-        entryType: document.getElementById('evEntry').value,
-        regType: document.getElementById('evReg').value,
-        status: 'Upcoming',
-        coordinatorName: document.getElementById('evCoordName').value.trim(),
-        coordinatorPhone: document.getElementById('evCoordPhone').value.trim(),
-        rules: document.getElementById('evRules').value.trim()
-      });
-      ['evName', 'evTime', 'evVenue', 'evCoordName', 'evCoordPhone', 'evRules'].forEach(id => document.getElementById(id).value = '');
-      await saveData();
-    };
-
-    window.editCoordinator = async (id) => {
-      const ev = adminData.events.find(e => e.id === id);
-      if (!ev) return;
-      const coordinatorName = prompt('Coordinator ka naam:', ev.coordinatorName || '');
-      if (coordinatorName === null) return;
-      const coordinatorPhone = prompt('Coordinator ka 10-digit WhatsApp number:', ev.coordinatorPhone || '');
-      if (coordinatorPhone === null) return;
-      ev.coordinatorName = coordinatorName.trim();
-      ev.coordinatorPhone = coordinatorPhone.trim();
-      await saveData();
-    };
-
-    window.setStatus = async (id, status) => {
-      const ev = adminData.events.find(e => e.id === id);
-      if (ev) {
-        ev.status = status;
-        await saveData();
-      }
-    };
-
-    window.deleteEvent = async (id) => {
-      if (!confirm('Event delete karna hai?')) return;
-      adminData.events = adminData.events.filter(e => e.id !== id);
-      await saveData();
     };
   </script>
 </body>
